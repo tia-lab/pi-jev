@@ -1,6 +1,6 @@
 {
 	"name": "pi-jev",
-	"version": "0.2.0",
+	"version": "0.2.1",
 	"description": "Typed TypeSafe System One judgments for Pi extensions and plain Node.",
 	"type": "module",
 	"main": "./dist/src/index.js",
