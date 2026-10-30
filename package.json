@@ -23,10 +23,12 @@
 	},
 	"scripts": {
 		"build": "tsc -p tsconfig.json",
+		"check": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.scripts.json",
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"test": "npm run build && node --test dist/tests/unit.test.js",
 		"test:live": "npm run build && PI_JEV_LIVE=1 node --test dist/tests/live.test.js",
-		"prepare": "husky"
+		"prepare": "husky",
+		"release": "bun scripts/release.ts"
 	},
 	"peerDependencies": {
 		"@earendil-works/pi-ai": "*",
