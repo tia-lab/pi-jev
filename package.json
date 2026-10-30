@@ -1,0 +1,44 @@
+{
+	"name": "pi-jev",
+	"version": "0.1.0",
+	"description": "Typed TypeSafe System One judgments for Pi extensions and plain Node.",
+	"type": "module",
+	"main": "./dist/src/index.js",
+	"types": "./dist/src/index.d.ts",
+	"exports": {
+		".": {
+			"types": "./dist/src/index.d.ts",
+			"import": "./dist/src/index.js"
+		}
+	},
+	"files": [
+		"dist",
+		"src",
+		"README.md"
+	],
+	"pi": {
+		"extensions": [
+			"./src/extension.ts"
+		]
+	},
+	"scripts": {
+		"build": "tsc -p tsconfig.json",
+		"typecheck": "tsc -p tsconfig.json --noEmit",
+		"test": "npm run build && node --test dist/tests/unit.test.js",
+		"test:live": "npm run build && PI_JEV_LIVE=1 node --test dist/tests/live.test.js",
+		"prepare": "husky"
+	},
+	"peerDependencies": {
+		"@earendil-works/pi-ai": "*",
+		"@earendil-works/pi-coding-agent": "*"
+	},
+	"devDependencies": {
+		"@earendil-works/pi-ai": "^1.4.0",
+		"@earendil-works/pi-coding-agent": "^1.4.0",
+		"@types/node": "^24.0.0",
+		"typescript": "^5.9.0",
+		"@commitlint/cli": "^19.3.0",
+		"@commitlint/config-conventional": "^19.2.2",
+		"husky": "^9.1.7"
+	}
+}
