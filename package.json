@@ -27,7 +27,7 @@
 		"typecheck": "tsc -p tsconfig.json --noEmit",
 		"test": "npm run build && node --test dist/tests/unit.test.js",
 		"test:live": "npm run build && PI_JEV_LIVE=1 node --test dist/tests/live.test.js",
-		"prepare": "husky",
+		"prepare": "husky || true",
 		"release": "bun scripts/release.ts"
 	},
 	"peerDependencies": {
