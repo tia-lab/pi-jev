@@ -59,28 +59,28 @@ answers, or decide whether a result is safe to act on. It does not wrap or impor
 
 ## Wire Contract
 
-| Item           | Value                                                    |
-| -------------- | -------------------------------------------------------- |
-| Endpoint       | `POST https://api.typesafe.ai/v1/systemone`               |
-| Auth           | `Authorization: Bearer <TYPESAFE_API_KEY>`                |
-| Default model  | `jev-latest`                                             |
-| Request        | `{ model, state, questions }`                            |
-| Response       | `{ model, answers, usage? }`                             |
-| Question types | `choice`, `noul`, `score`                               |
-| Bounds         | 1-128 questions; request <=256 KiB; response <=1 MiB      |
+| Item           | Value                                                |
+| -------------- | ---------------------------------------------------- |
+| Endpoint       | `POST https://api.typesafe.ai/v1/systemone`          |
+| Auth           | `Authorization: Bearer <TYPESAFE_API_KEY>`           |
+| Default model  | `jev-latest`                                         |
+| Request        | `{ model, state, questions }`                        |
+| Response       | `{ model, answers, usage? }`                         |
+| Question types | `choice`, `noul`, `score`                            |
+| Bounds         | 1-128 questions; request <=256 KiB; response <=1 MiB |
 
 Model precedence is `opts.model`, then `request.model`, then `jev-latest`.
 
 ```ts
 type Question =
-  | { type: "choice"; instructions: string; criteria: Record<string, string> }
-  | { type: "noul"; instructions: string }
-  | { type: "score"; instructions: string; criteria: string[] }; // 2-10 levels
+	| { type: 'choice'; instructions: string; criteria: Record<string, string> }
+	| { type: 'noul'; instructions: string }
+	| { type: 'score'; instructions: string; criteria: string[] } // 2-10 levels
 
 type Answer =
-  | { type: "choice"; choice: string; confidence?: number }
-  | { type: "noul"; noul: number } // probability in [0, 1]
-  | { type: "score"; score: number; confidence?: number };
+	| { type: 'choice'; choice: string; confidence?: number }
+	| { type: 'noul'; noul: number } // probability in [0, 1]
+	| { type: 'score'; score: number; confidence?: number }
 ```
 
 ## Installation
@@ -97,26 +97,26 @@ the extension entry uses the host-provided Pi packages.
 ## Quick Start
 
 ```ts
-import { evaluate, JevTransientError } from "pi-jev";
+import { evaluate, JevTransientError } from 'pi-jev'
 
 const response = await evaluate({
-  state: { summary: "The change passes its tests." },
-  questions: {
-    ship: { type: "noul", instructions: "Does this change ship safely?" },
-    route: {
-      type: "choice",
-      instructions: "Which route?",
-      criteria: { fast: "Fast", safe: "Safe" },
-    },
-    risk: {
-      type: "score",
-      instructions: "Rate review risk",
-      criteria: ["low", "medium", "high"],
-    },
-  },
-});
+	state: { summary: 'The change passes its tests.' },
+	questions: {
+		ship: { type: 'noul', instructions: 'Does this change ship safely?' },
+		route: {
+			type: 'choice',
+			instructions: 'Which route?',
+			criteria: { fast: 'Fast', safe: 'Safe' }
+		},
+		risk: {
+			type: 'score',
+			instructions: 'Rate review risk',
+			criteria: ['low', 'medium', 'high']
+		}
+	}
+})
 
-console.log(response.answers.ship); // { type: "noul", noul: 0.88 }
+console.log(response.answers.ship) // { type: "noul", noul: 0.88 }
 ```
 
 Set `TYPESAFE_API_KEY` before the call, or pass `apiKey` explicitly. Pass
@@ -125,15 +125,15 @@ Set `TYPESAFE_API_KEY` before the call, or pass `apiKey` explicitly. Pass
 
 ## Errors
 
-| Condition                         | Behavior                                            |
-| --------------------------------- | --------------------------------------------------- |
-| Missing API key                   | Error naming `TYPESAFE_API_KEY`                     |
-| Invalid request                   | Error before the network call                       |
-| HTTP 429 or 529                   | `JevTransientError` with `status`; no retry         |
-| Other non-2xx status              | Error with the status code only                     |
-| Missing or malformed answer       | Error; no partial result                            |
-| Network or fetch failure          | Generic error; the fetcher cause is not surfaced    |
-| Aborted signal                    | Error reporting the request was aborted             |
+| Condition                   | Behavior                                         |
+| --------------------------- | ------------------------------------------------ |
+| Missing API key             | Error naming `TYPESAFE_API_KEY`                  |
+| Invalid request             | Error before the network call                    |
+| HTTP 429 or 529             | `JevTransientError` with `status`; no retry      |
+| Other non-2xx status        | Error with the status code only                  |
+| Missing or malformed answer | Error; no partial result                         |
+| Network or fetch failure    | Generic error; the fetcher cause is not surfaced |
+| Aborted signal              | Error reporting the request was aborted          |
 
 ## Pi Extension
 
