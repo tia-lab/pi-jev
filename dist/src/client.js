@@ -59,6 +59,35 @@ function parseUsage(value) {
         throw new Error(`${INVALID}: malformed usage`);
     return { input_tokens: input, output_tokens: output };
 }
+function parseChoiceProbabilities(id, value, criteria) {
+    if (!isObject(value) || Object.keys(value).length === 0)
+        throw new Error(`${INVALID}: answer "${id}" has malformed probabilities`);
+    const probabilities = {};
+    for (const [key, p] of Object.entries(value)) {
+        if (!has(criteria, key) || !probability(p))
+            throw new Error(`${INVALID}: answer "${id}" has malformed probabilities`);
+        probabilities[key] = p;
+    }
+    return probabilities;
+}
+function parseScoreProbabilities(id, value, levels) {
+    if (Array.isArray(value)) {
+        if (value.length === levels && value.every((p) => probability(p)))
+            return value;
+    }
+    else if (isObject(value) && Object.keys(value).length === levels) {
+        const probabilities = [];
+        for (let i = 0; i < levels; i++) {
+            const p = value[String(i)];
+            if (!probability(p))
+                break;
+            probabilities.push(p);
+        }
+        if (probabilities.length === levels)
+            return probabilities;
+    }
+    throw new Error(`${INVALID}: answer "${id}" has malformed probabilities`);
+}
 function parseResponse(payload, request) {
     if (!isObject(payload) || typeof payload.model !== "string" || !isObject(payload.answers))
         throw new Error(INVALID);
@@ -83,17 +112,23 @@ function parseResponse(payload, request) {
         else if (question.type === "choice") {
             if (typeof answer.choice !== "string" || !has(question.criteria, answer.choice))
                 throw new Error(`${INVALID}: answer "${id}" has a malformed choice`);
-            answers[id] = confidence === undefined
-                ? { type: "choice", choice: answer.choice }
-                : { type: "choice", choice: answer.choice, confidence };
+            const parsed = { type: "choice", choice: answer.choice };
+            if (confidence !== undefined)
+                parsed.confidence = confidence;
+            if (answer.probabilities !== undefined)
+                parsed.probabilities = parseChoiceProbabilities(id, answer.probabilities, question.criteria);
+            answers[id] = parsed;
         }
         else {
             if (typeof answer.score !== "number" || !Number.isFinite(answer.score) ||
                 answer.score < 0 || answer.score > question.criteria.length - 1)
                 throw new Error(`${INVALID}: answer "${id}" has a malformed score`);
-            answers[id] = confidence === undefined
-                ? { type: "score", score: answer.score }
-                : { type: "score", score: answer.score, confidence };
+            const parsed = { type: "score", score: answer.score };
+            if (confidence !== undefined)
+                parsed.confidence = confidence;
+            if (answer.probabilities !== undefined)
+                parsed.probabilities = parseScoreProbabilities(id, answer.probabilities, question.criteria.length);
+            answers[id] = parsed;
         }
     }
     const usage = parseUsage(payload.usage);

@@ -97,6 +97,107 @@ test("accepts structured EntryType instructions and criteria", async () => {
         rate: { type: "score", score: 1 },
     });
 });
+test("preserves a choice probability distribution", async () => {
+    const { fetcher } = fakeFetch({
+        model: "jev-1.14.0",
+        answers: {
+            pick: {
+                type: "choice",
+                choice: "returns",
+                confidence: 1,
+                probabilities: { shipping: 0, returns: 1, billing: 0 },
+            },
+        },
+    });
+    const request = {
+        state: "x",
+        questions: {
+            pick: {
+                type: "choice",
+                instructions: "Pick",
+                criteria: { shipping: "S", returns: "R", billing: "B" },
+            },
+        },
+    };
+    const response = await evaluate(request, { fetcher, apiKey: KEY });
+    assert.deepEqual(response.answers.pick, {
+        type: "choice",
+        choice: "returns",
+        confidence: 1,
+        probabilities: { shipping: 0, returns: 1, billing: 0 },
+    });
+});
+test("normalizes score probabilities to a per-level array", async () => {
+    const request = {
+        state: "x",
+        questions: { rate: { type: "score", instructions: "Rate", criteria: ["low", "medium", "high"] } },
+    };
+    const wire = fakeFetch({
+        model: "jev-1.14.0",
+        answers: {
+            rate: { type: "score", score: 1.43, confidence: 0.35, probabilities: { "0": 0, "1": 0.57, "2": 0.43 } },
+        },
+    });
+    const wireResponse = await evaluate(request, { fetcher: wire.fetcher, apiKey: KEY });
+    assert.deepEqual(wireResponse.answers.rate, {
+        type: "score",
+        score: 1.43,
+        confidence: 0.35,
+        probabilities: [0, 0.57, 0.43],
+    });
+    const array = fakeFetch({
+        model: "jev-1.14.0",
+        answers: { rate: { type: "score", score: 1, probabilities: [0.1, 0.2, 0.7] } },
+    });
+    const arrayResponse = await evaluate(request, { fetcher: array.fetcher, apiKey: KEY });
+    assert.deepEqual(arrayResponse.answers.rate, { type: "score", score: 1, probabilities: [0.1, 0.2, 0.7] });
+});
+test("omits probabilities when the response has none", async () => {
+    const { fetcher } = fakeFetch({
+        model: "jev-1.14.0",
+        answers: {
+            pick: { type: "choice", choice: "a" },
+            rate: { type: "score", score: 1 },
+        },
+    });
+    const request = {
+        state: "x",
+        questions: {
+            pick: { type: "choice", instructions: "Pick", criteria: { a: "A" } },
+            rate: { type: "score", instructions: "Rate", criteria: ["low", "high"] },
+        },
+    };
+    const response = await evaluate(request, { fetcher, apiKey: KEY });
+    assert.deepEqual(response.answers.pick, { type: "choice", choice: "a" });
+    assert.deepEqual(response.answers.rate, { type: "score", score: 1 });
+    assert.equal("probabilities" in response.answers.pick, false);
+    assert.equal("probabilities" in response.answers.rate, false);
+});
+test("rejects malformed choice and score distributions", async () => {
+    const choiceRequest = {
+        state: "x",
+        questions: { pick: { type: "choice", instructions: "Pick", criteria: { a: "A", b: "B" } } },
+    };
+    const choice = (probabilities) => fakeFetch({
+        model: "jev-1.14.0",
+        answers: { pick: { type: "choice", choice: "a", probabilities } },
+    });
+    await assert.rejects(evaluate(choiceRequest, { fetcher: choice({ z: 0.5 }).fetcher, apiKey: KEY }), /malformed probabilities/);
+    await assert.rejects(evaluate(choiceRequest, { fetcher: choice({ a: 1.5 }).fetcher, apiKey: KEY }), /malformed probabilities/);
+    await assert.rejects(evaluate(choiceRequest, { fetcher: choice([0.5, 0.5]).fetcher, apiKey: KEY }), /malformed probabilities/);
+    const scoreRequest = {
+        state: "x",
+        questions: { rate: { type: "score", instructions: "Rate", criteria: ["low", "medium", "high"] } },
+    };
+    const score = (probabilities) => fakeFetch({
+        model: "jev-1.14.0",
+        answers: { rate: { type: "score", score: 1, probabilities } },
+    });
+    await assert.rejects(evaluate(scoreRequest, { fetcher: score({ "0": 0.5, "2": 0.5 }).fetcher, apiKey: KEY }), /malformed probabilities/);
+    await assert.rejects(evaluate(scoreRequest, { fetcher: score({ "0": 0.5, "1": 0.5, "3": 0 }).fetcher, apiKey: KEY }), /malformed probabilities/);
+    await assert.rejects(evaluate(scoreRequest, { fetcher: score([0.5, 0.5]).fetcher, apiKey: KEY }), /malformed probabilities/);
+    await assert.rejects(evaluate(scoreRequest, { fetcher: score({ "0": 0.5, "1": 0.6, "2": -0.1 }).fetcher, apiKey: KEY }), /malformed probabilities/);
+});
 test("rejects a missing answer instead of returning a partial response", async () => {
     const { fetcher } = fakeFetch({ model: "jev-1.14.0", answers: {} });
     await assert.rejects(evaluate(noulRequest, { fetcher, apiKey: KEY }), /invalid typed response/);

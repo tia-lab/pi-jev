@@ -1,4 +1,14 @@
-import type { Answer, EvaluateOptions, JevRequest, JevResponse, JevUsage, Question } from "./types.js";
+import type {
+  Answer,
+  ChoiceAnswer,
+  EntryType,
+  EvaluateOptions,
+  JevRequest,
+  JevResponse,
+  JevUsage,
+  Question,
+  ScoreAnswer,
+} from "./types.js";
 /** Fixed HTTPS endpoint; redirected responses are rejected. */
 export const JEV_ENDPOINT = "https://api.typesafe.ai/v1/systemone";
 export const DEFAULT_MODEL = "jev-latest";
@@ -57,6 +67,33 @@ function parseUsage(value: unknown): JevUsage | undefined {
   return { input_tokens: input as number, output_tokens: output as number };
 }
 
+function parseChoiceProbabilities(id: string, value: unknown, criteria: Record<string, EntryType>): Record<string, number> {
+  if (!isObject(value) || Object.keys(value).length === 0)
+    throw new Error(`${INVALID}: answer "${id}" has malformed probabilities`);
+  const probabilities: Record<string, number> = {};
+  for (const [key, p] of Object.entries(value)) {
+    if (!has(criteria, key) || !probability(p))
+      throw new Error(`${INVALID}: answer "${id}" has malformed probabilities`);
+    probabilities[key] = p;
+  }
+  return probabilities;
+}
+
+function parseScoreProbabilities(id: string, value: unknown, levels: number): number[] {
+  if (Array.isArray(value)) {
+    if (value.length === levels && value.every((p) => probability(p))) return value as number[];
+  } else if (isObject(value) && Object.keys(value).length === levels) {
+    const probabilities: number[] = [];
+    for (let i = 0; i < levels; i++) {
+      const p = value[String(i)];
+      if (!probability(p)) break;
+      probabilities.push(p);
+    }
+    if (probabilities.length === levels) return probabilities;
+  }
+  throw new Error(`${INVALID}: answer "${id}" has malformed probabilities`);
+}
+
 function parseResponse(payload: unknown, request: JevRequest): JevResponse {
   if (!isObject(payload) || typeof payload.model !== "string" || !isObject(payload.answers)) throw new Error(INVALID);
   const ids = Object.keys(request.questions);
@@ -80,16 +117,20 @@ function parseResponse(payload: unknown, request: JevRequest): JevResponse {
     } else if (question.type === "choice") {
       if (typeof answer.choice !== "string" || !has(question.criteria, answer.choice))
         throw new Error(`${INVALID}: answer "${id}" has a malformed choice`);
-      answers[id] = confidence === undefined
-        ? { type: "choice", choice: answer.choice }
-        : { type: "choice", choice: answer.choice, confidence };
+      const parsed: ChoiceAnswer = { type: "choice", choice: answer.choice };
+      if (confidence !== undefined) parsed.confidence = confidence;
+      if (answer.probabilities !== undefined)
+        parsed.probabilities = parseChoiceProbabilities(id, answer.probabilities, question.criteria);
+      answers[id] = parsed;
     } else {
       if (typeof answer.score !== "number" || !Number.isFinite(answer.score) ||
           answer.score < 0 || answer.score > question.criteria.length - 1)
         throw new Error(`${INVALID}: answer "${id}" has a malformed score`);
-      answers[id] = confidence === undefined
-        ? { type: "score", score: answer.score }
-        : { type: "score", score: answer.score, confidence };
+      const parsed: ScoreAnswer = { type: "score", score: answer.score };
+      if (confidence !== undefined) parsed.confidence = confidence;
+      if (answer.probabilities !== undefined)
+        parsed.probabilities = parseScoreProbabilities(id, answer.probabilities, question.criteria.length);
+      answers[id] = parsed;
     }
   }
 

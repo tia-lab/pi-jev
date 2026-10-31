@@ -80,10 +80,14 @@ type Question =
 	| { type: 'score'; instructions: EntryType; criteria: EntryType[] } // 2-10 levels
 
 type Answer =
-	| { type: 'choice'; choice: string; confidence?: number }
+	| { type: 'choice'; choice: string; confidence?: number; probabilities?: Record<string, number> }
 	| { type: 'noul'; noul: number } // probability in [0, 1]
-	| { type: 'score'; score: number; confidence?: number }
+	| { type: 'score'; score: number; confidence?: number; probabilities?: number[] } // per level
 ```
+
+Choice and score answers may include the API's `probabilities` distribution. Choice keeps
+the option-keyed object; score level keys (`"0"`..`"n-1"`) are normalized to a level-ordered
+array. Both are omitted when the response does not carry them.
 
 ## Installation
 

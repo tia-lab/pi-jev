@@ -9,8 +9,10 @@ export interface ScoreQuestion { type: "score"; instructions: EntryType; criteri
 export type Question = ChoiceQuestion | NoulQuestion | ScoreQuestion;
 
 export interface NoulAnswer { type: "noul"; noul: number } // probability in [0, 1]
-export interface ChoiceAnswer { type: "choice"; choice: string; confidence?: number }
-export interface ScoreAnswer { type: "score"; score: number; confidence?: number }
+/** Choice probabilities are keyed by criterion name; values are in [0, 1]. */
+export interface ChoiceAnswer { type: "choice"; choice: string; confidence?: number; probabilities?: Record<string, number> }
+/** Score probabilities are in level order; the API object keyed by level number is normalized to this array. */
+export interface ScoreAnswer { type: "score"; score: number; confidence?: number; probabilities?: number[] }
 export type Answer = NoulAnswer | ChoiceAnswer | ScoreAnswer;
 
 export interface JevRequest { state: unknown; questions: Record<string, Question>; model?: string }

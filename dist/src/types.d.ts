@@ -26,15 +26,19 @@ export interface NoulAnswer {
     type: "noul";
     noul: number;
 }
+/** Choice probabilities are keyed by criterion name; values are in [0, 1]. */
 export interface ChoiceAnswer {
     type: "choice";
     choice: string;
     confidence?: number;
+    probabilities?: Record<string, number>;
 }
+/** Score probabilities are in level order; the API object keyed by level number is normalized to this array. */
 export interface ScoreAnswer {
     type: "score";
     score: number;
     confidence?: number;
+    probabilities?: number[];
 }
 export type Answer = NoulAnswer | ChoiceAnswer | ScoreAnswer;
 export interface JevRequest {
