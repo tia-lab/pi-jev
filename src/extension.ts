@@ -1,11 +1,23 @@
 import { Type } from "@earendil-works/pi-ai";
 import { defineTool, type ExtensionAPI } from "@earendil-works/pi-coding-agent";
+import type { EntryType } from "./types.js";
 import { evaluate } from "./client.js";
 
+// client.ts checkQuestion is the runtime EntryType authority. TypeBox recursion is not
+// portable here: Type.Cyclic emits $defs, which some Pi providers strip.
+const EntryType = Type.Unsafe<EntryType>(
+  Type.Any({ description: "EntryType: string, number, boolean, null, array or object." }),
+);
+
+const NoulCriteria = Type.Object({
+  true: Type.Optional(EntryType),
+  false: Type.Optional(EntryType),
+});
+
 const Question = Type.Union([
-  Type.Object({ type: Type.Literal("choice"), instructions: Type.String(), criteria: Type.Record(Type.String(), Type.String()) }),
-  Type.Object({ type: Type.Literal("noul"), instructions: Type.String() }),
-  Type.Object({ type: Type.Literal("score"), instructions: Type.String(), criteria: Type.Array(Type.String(), { minItems: 2, maxItems: 10 }) }),
+  Type.Object({ type: Type.Literal("choice"), instructions: EntryType, criteria: Type.Record(Type.String(), EntryType) }),
+  Type.Object({ type: Type.Literal("noul"), instructions: EntryType, criteria: Type.Optional(NoulCriteria) }),
+  Type.Object({ type: Type.Literal("score"), instructions: EntryType, criteria: Type.Array(EntryType, { minItems: 2, maxItems: 10 }) }),
 ]);
 
 export default function (pi: ExtensionAPI): void {

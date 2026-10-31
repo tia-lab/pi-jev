@@ -1,8 +1,11 @@
 /** Wire types for the TypeSafe System One API. No runtime behavior lives here. */
 
-export interface ChoiceQuestion { type: "choice"; instructions: string; criteria: Record<string, string> }
-export interface NoulQuestion { type: "noul"; instructions: string }
-export interface ScoreQuestion { type: "score"; instructions: string; criteria: string[] } // 2-10 ordered levels
+/** Structured JSON value accepted by System One for instructions and criteria descriptions. */
+export type EntryType = string | number | boolean | null | EntryType[] | { [key: string]: EntryType };
+
+export interface ChoiceQuestion { type: "choice"; instructions: EntryType; criteria: Record<string, EntryType> }
+export interface NoulQuestion { type: "noul"; instructions: EntryType; criteria?: { true?: EntryType; false?: EntryType } }
+export interface ScoreQuestion { type: "score"; instructions: EntryType; criteria: EntryType[] } // 2-10 ordered levels
 export type Question = ChoiceQuestion | NoulQuestion | ScoreQuestion;
 
 export interface NoulAnswer { type: "noul"; noul: number } // probability in [0, 1]

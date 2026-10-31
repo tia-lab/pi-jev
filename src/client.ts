@@ -18,12 +18,11 @@ const probability = (v: unknown): v is number =>
   typeof v === "number" && Number.isFinite(v) && v >= 0 && v <= 1;
 function checkQuestion(id: string, q: unknown): asserts q is Question {
   const label = `Invalid question "${id}"`;
-  if (!isObject(q) || typeof q.instructions !== "string") throw new Error(label);
+  if (!isObject(q) || !("instructions" in q)) throw new Error(label);
   if (q.type === "noul") return;
-  if (q.type === "choice" && isObject(q.criteria) && Object.keys(q.criteria).length > 0 &&
-      Object.values(q.criteria).every((v) => typeof v === "string")) return;
-  if (q.type === "score" && Array.isArray(q.criteria) && q.criteria.length >= 2 &&
-      q.criteria.length <= 10 && q.criteria.every((v) => typeof v === "string")) return;
+  if (q.type === "choice" && isObject(q.criteria) && Object.keys(q.criteria).length > 0) return;
+  if (q.type === "score" && Array.isArray(q.criteria) &&
+      q.criteria.length >= 2 && q.criteria.length <= 10) return;
   throw new Error(`${label}: use named choice options, noul, or 2-10 score levels`);
 }
 

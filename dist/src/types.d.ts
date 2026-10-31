@@ -1,17 +1,25 @@
 /** Wire types for the TypeSafe System One API. No runtime behavior lives here. */
+/** Structured JSON value accepted by System One for instructions and criteria descriptions. */
+export type EntryType = string | number | boolean | null | EntryType[] | {
+    [key: string]: EntryType;
+};
 export interface ChoiceQuestion {
     type: "choice";
-    instructions: string;
-    criteria: Record<string, string>;
+    instructions: EntryType;
+    criteria: Record<string, EntryType>;
 }
 export interface NoulQuestion {
     type: "noul";
-    instructions: string;
+    instructions: EntryType;
+    criteria?: {
+        true?: EntryType;
+        false?: EntryType;
+    };
 }
 export interface ScoreQuestion {
     type: "score";
-    instructions: string;
-    criteria: string[];
+    instructions: EntryType;
+    criteria: EntryType[];
 }
 export type Question = ChoiceQuestion | NoulQuestion | ScoreQuestion;
 export interface NoulAnswer {

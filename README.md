@@ -72,10 +72,12 @@ answers, or decide whether a result is safe to act on. It does not wrap or impor
 Model precedence is `opts.model`, then `request.model`, then `jev-latest`.
 
 ```ts
+type EntryType = string | number | boolean | null | EntryType[] | { [key: string]: EntryType };
+
 type Question =
-	| { type: 'choice'; instructions: string; criteria: Record<string, string> }
-	| { type: 'noul'; instructions: string }
-	| { type: 'score'; instructions: string; criteria: string[] } // 2-10 levels
+	| { type: 'choice'; instructions: EntryType; criteria: Record<string, EntryType> }
+	| { type: 'noul'; instructions: EntryType; criteria?: { true?: EntryType; false?: EntryType } }
+	| { type: 'score'; instructions: EntryType; criteria: EntryType[] } // 2-10 levels
 
 type Answer =
 	| { type: 'choice'; choice: string; confidence?: number }
