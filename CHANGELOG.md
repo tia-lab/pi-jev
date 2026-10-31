@@ -2,6 +2,11 @@
 
 All notable changes to this project are documented here.
 
+## [0.2.3] - 2026-10-31
+
+### Features
+
+- client: preserve answer probability distribution for choice and score
 ## [0.2.2] - 2026-10-31
 
 ### Features
